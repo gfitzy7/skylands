@@ -1,11 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.IO;
+using System.Xml;
+using System.Xml.Serialization;
 
 public class Map : MonoBehaviour {
 
-	private int mapWidth = 25;
-	private int mapHeight = 40;
-	private int[] map;
+	private int mapWidth;
+	private int mapHeight;
+	private GameObject[] map;
 	
 	private GameObject selectedTile = null;
 	
@@ -18,35 +21,30 @@ public class Map : MonoBehaviour {
 	}
 
 	void Start () {
-		map = new int[mapWidth * mapHeight];
-		
+		var serializer = new XmlSerializer(typeof(_MapContainer));
+		var stream = new FileStream(Path.Combine(Application.dataPath, "Resources/XML/maps/Board_1.xml"), FileMode.Open);
+		var mapXml = serializer.Deserialize(stream) as _MapContainer;
+		stream.Close();
+
+		mapWidth = mapXml.map.mapWidth;
+		mapHeight = mapXml.map.mapHeight;
+		map = new GameObject[mapWidth * mapHeight];
+
 		for(int i = 0; i < mapWidth * mapHeight; i++){
-			int tile = (Random.Range(0f, 1f) < 0.75f ? 0: 1);
-			//int tile = 1;
-			map[i] = tile;
-			CreateTile(tile, i % mapWidth, i / mapWidth);
-		}
-	}
-	
-	private void CreateTile(int tile, int xPos, int yPos){
-		GameObject hexTile = Instantiate(Resources.Load ("Hex")) as GameObject;;
-		
-		if(tile == Tile.Water.GetHashCode()){
-			hexTile.GetComponent<SpriteRenderer>().sprite = water;
-		}
-		else if(tile == Tile.Grass.GetHashCode()){
-			hexTile.GetComponent<SpriteRenderer>().sprite = grass;
-		}
-		
-		if(hexTile){
-			hexTile.transform.parent = gameObject.transform;
+			int xPos = i % mapWidth;
+			int yPos = i / mapWidth;
+
+			Vector3 position;
 			if(yPos % 2 == 0){
-				hexTile.transform.position = new Vector3((3f * xPos) / 2f, yPos * Mathf.Sqrt(3) / 4f, 0);
+				position = new Vector3((3f * xPos) / 2f, yPos * Mathf.Sqrt(3) / 4f, 0);
 			}
 			else{
-				hexTile.transform.position = new Vector3(0.75f + (3f * xPos) / 2f, yPos * Mathf.Sqrt(3) / 4f, 0);
+				position = new Vector3(0.75f + (3f * xPos) / 2f, yPos * Mathf.Sqrt(3) / 4f, 0);
 			}
-			
+			Debug.Log ("Tiles/" + mapXml.map.mapTiles [i].tileObjectName);
+			GameObject tile = Instantiate(Resources.Load("Tiles/" + mapXml.map.mapTiles[i].tileObjectName), position, Quaternion.identity) as GameObject;
+			tile.transform.parent = gameObject.transform;
+			map [i] = tile;
 		}
 	}
 }
